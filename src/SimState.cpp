@@ -128,6 +128,7 @@ bool SimState::init(const nlohmann::json& args_in)
         "max_iterations": -1,
         "max_time": -1,
         "timestep": 0.01,
+        "solve_collisions" : true,
         "scene_type": "distance_barrier_rb_problem",
         "solver": "ipc_solver",
         "rigid_body_problem": {
@@ -250,6 +251,7 @@ bool SimState::init(const nlohmann::json& args_in)
 
     m_max_simulation_steps = args["max_iterations"].get<int>();
     problem_ptr->timestep(args["timestep"].get<double>());
+    m_solve_collisions = args["solve_collisions"].get<bool>();
     double max_time = args["max_time"].get<double>();
     if (max_time >= 0) {
         assert(m_max_simulation_steps == -1); // is default value?
@@ -265,6 +267,8 @@ bool SimState::init(const nlohmann::json& args_in)
     solver_iterations.clear();
     num_contacts.clear();
     step_minimum_distances.clear();
+    step_has_intersections.clear();
+
 
     return true;
 }
@@ -334,7 +338,7 @@ void SimState::run_simulation(const std::string& fout)
     igl::Timer timer;
     timer.start();
 
-    m_solve_collisions = true;
+    //m_solve_collisions = true;
     print_progress_bar(0, m_max_simulation_steps, 0);
     for (int i = 0; i < m_max_simulation_steps; ++i) {
         simulation_step();
@@ -415,7 +419,7 @@ void SimState::save_simulation_step()
     solver_iterations.push_back(problem_ptr->opt_result.num_iterations);
     num_contacts.push_back(problem_ptr->num_contacts());
     step_minimum_distances.push_back(problem_ptr->compute_min_distance());
-
+    step_has_intersections.push_back(m_step_has_intersections);
     PROFILE_END();
 }
 
@@ -441,6 +445,7 @@ bool SimState::save_simulation(const std::string& filename)
     stats["solver_iterations"] = solver_iterations;
     stats["num_contacts"] = num_contacts;
     stats["step_minimum_distances"] = step_minimum_distances;
+    stats["step_has_intersections"] = step_has_intersections;
     stats["solve_stats"] = problem_ptr->solver().stats();
     results["stats"] = stats;
 

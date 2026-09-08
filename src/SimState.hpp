@@ -52,6 +52,7 @@ public:
     std::vector<int> solver_iterations;
     std::vector<int> num_contacts;
     std::vector<double> step_minimum_distances;
+    std::vector<bool> step_has_intersections;
 
 protected:
     igl::Timer step_timer;
