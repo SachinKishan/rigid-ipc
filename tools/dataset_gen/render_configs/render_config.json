@@ -1,0 +1,7 @@
+{
+    "camera": {"location": [0, 0, 12], "rotation": [0, 0, 0]},
+    "light": {"type": "SUN", "location": [0, 0, 10], "rotation": [0.3, 0.3, 0], "energy": 3},
+    "body_colors": ["#ff0000", "#00ff00", "#0000ff"],
+    "shading": "flat",
+    "resolution": [1280, 720]
+}

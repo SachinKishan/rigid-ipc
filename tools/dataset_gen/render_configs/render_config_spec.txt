@@ -1,0 +1,38 @@
+RENDER CONFIG JSON SPEC
+(for blender_render.py in tools/dataset_gen/)
+
+Required keys:
+
+camera.location       [x, y, z]              Camera position in world space
+camera.rotation       [x, y, z] (radians)     Camera Euler rotation
+
+light.type             string                 Blender light type, e.g. "SUN"
+light.location          [x, y, z]              Light position
+light.rotation          [x, y, z] (radians)     Light Euler rotation
+light.energy            number                 Light strength (Blender units)
+
+body_colors             list of hex strings    One color per rigid body, e.g. "#ff0000"
+                                                Length must match number of mesh bodies in scene.
+                                                Ordering assumed to match bpy.data.objects (mesh-type)
+                                                order, which is assumed to match the scene JSON's
+                                                rigid_bodies list order. NOT independently verified.
+
+shading                 string                 "flat" or other Blender shading mode
+
+resolution              [width, height]        Output render resolution in pixels
+
+Optional keys:
+
+fps_override            number                 If omitted, fps = 1 / timestep, read from
+                                                sim.json's args.timestep (existence of this key
+                                                assumed, not independently verified)
+
+Example:
+
+{
+    "camera": {"location": [0, 0, 12], "rotation": [0, 0, 0]},
+    "light": {"type": "SUN", "location": [0, 0, 10], "rotation": [0.3, 0.3, 0], "energy": 3},
+    "body_colors": ["#ff0000", "#00ff00", "#0000ff"],
+    "shading": "flat",
+    "resolution": [1280, 720]
+}
