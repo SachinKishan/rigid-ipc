@@ -273,6 +273,7 @@ notebooks/*
 tools/2D
 tools/parameter_sweep
 tools/blender
+fixtures/3D/custom/generated
 
 ################################################################################
 # Meshes
