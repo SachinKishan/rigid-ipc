@@ -11,6 +11,7 @@ import json
 import os
 import csv
 import sys
+import colorsys
 
 
 def parse_args():
@@ -33,6 +34,17 @@ def hex_to_rgba(hex_color):
     g = int(hex_color[2:4], 16) / 255.0
     b = int(hex_color[4:6], 16) / 255.0
     return (r, g, b, 1.0)
+
+
+def generate_distinct_colors(n):
+    """Evenly spaced hues around the color wheel, fixed saturation/value
+    for consistent brightness. Scales to any number of bodies."""
+    colors = []
+    for i in range(n):
+        hue = i / n
+        r, g, b = colorsys.hsv_to_rgb(hue, 0.85, 0.95)
+        colors.append((r, g, b, 1.0))
+    return colors
 
 
 def main():
@@ -100,17 +112,27 @@ def main():
     # in the order they appear in the scene JSON's "rigid_bodies" list, with
     # Blender's standard ".001", ".002" suffixes for name collisions.
     mesh_objects = [obj for obj in bpy.data.objects if obj.type == "MESH"]
-    body_colors = render_cfg.get("body_colors", [])
+    body_colors_hex = render_cfg.get("body_colors")
+    if body_colors_hex:
+        # Explicit colors in the config take priority, but if there are
+        # more bodies than provided colors, generate the rest procedurally
+        # rather than leaving them uncolored.
+        body_colors = [hex_to_rgba(c) for c in body_colors_hex]
+        if len(mesh_objects) > len(body_colors):
+            body_colors += generate_distinct_colors(len(mesh_objects) - len(body_colors))
+    else:
+        body_colors = generate_distinct_colors(len(mesh_objects))
+
     shading = render_cfg.get("shading", "flat")
 
     for i, obj in enumerate(mesh_objects):
         if i < len(body_colors):
             mat = bpy.data.materials.new(name=f"body_{i}_mat")
-            mat.diffuse_color = hex_to_rgba(body_colors[i])
+            mat.diffuse_color = body_colors[i]
             mat.use_nodes = True
             bsdf = mat.node_tree.nodes.get("Principled BSDF")
             if bsdf is not None:
-                bsdf.inputs["Base Color"].default_value = hex_to_rgba(body_colors[i])
+                bsdf.inputs["Base Color"].default_value = body_colors[i]
             if obj.data.materials:
                 obj.data.materials[0] = mat
             else:
@@ -129,9 +151,15 @@ def main():
 
     # ---- Render engine ----
     scene.render.engine = "BLENDER_EEVEE"
-    resolution = render_cfg.get("resolution", [1280, 720])
+    resolution = render_cfg.get("resolution", [512, 512])
     scene.render.resolution_x = resolution[0]
     scene.render.resolution_y = resolution[1]
+
+    # Cap samples: flat-shaded solid-color cubes with a single sun light have
+    # no soft shadows, reflections, or GI to resolve, so a low sample count
+    # is visually indistinguishable from the (much slower) default here.
+    eevee_samples = render_cfg.get("eevee_samples", 16)
+    scene.eevee.taa_render_samples = eevee_samples
 
     background_color = render_cfg.get("background_color")
     if background_color:
